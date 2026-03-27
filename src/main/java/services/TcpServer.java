@@ -52,6 +52,7 @@ public class TcpServer implements Server {
      */
     public void startServer() {
         try {
+            log.info("Starting TCP server on port " + port);
             this.clientSocket = serverSocket.accept();
         }
         catch (IOException e) {
