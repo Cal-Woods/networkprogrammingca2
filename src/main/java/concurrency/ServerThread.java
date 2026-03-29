@@ -18,7 +18,6 @@ public class ServerThread implements Runnable {
 
     @Override
     public void run() {
-        log.info("Starting new server on separate thread!");
-        this.server.startServer();
+
     }
 }
