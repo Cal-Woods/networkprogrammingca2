@@ -45,7 +45,11 @@ public class Email implements Comparable<Email> {
     }
 
     private static void validateStringData(String data) {
-        if (data == null || data.isBlank()) {
+        if (data == null) {
+            log.error("Could not create new Email object as given email data was null!");
+            throw new IllegalArgumentException("Email data was null!");
+        }
+        else if (data.isBlank()) {
             log.error("Could not create new Email object as given String data was blank!");
             throw new IllegalArgumentException("Given String data was blank, check all String data!" + data.toString());
         }
