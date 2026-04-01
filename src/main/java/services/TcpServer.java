@@ -77,6 +77,7 @@ public class TcpServer implements Server {
     public void stopServer() {
         try {
             this.clientSocket.close();
+            this.serverSocket.close();
         }
         catch (IOException e) {
             log.error("Could not close connection and close clientSocket! {}", e.toString());
