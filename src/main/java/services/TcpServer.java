@@ -19,16 +19,23 @@ public class TcpServer implements Server {
     @NonNull InetAddress address;
     @NonNull ServerSocket serverSocket;
     Socket clientSocket;
+    private final String separator;
 
+    private static final int DATA_SIZE = 5;
+    private static int idGenerator = 1;
     /**
      * Setup instance with given port to use in binding to current host ip address.
      * @param port Given port, between 0 - 65535
+     * @param separator Given {@link String} for splitting input into tokens
      */
-    public TcpServer(int port) throws IOException {
+    public TcpServer(int port, String separator) throws IOException {
         setPort(port);
         this.address = InetAddress.getLocalHost();
 
         this.serverSocket = new ServerSocket(port);
+
+        //Set separator
+        this.separator = setSeparator(separator);
     }
 
     /**
@@ -37,12 +44,15 @@ public class TcpServer implements Server {
      * @param backLog given backlog as requested max number of connections
      * @param address Given {@link InetAddress} object as ip address, cannot be null
      */
-    public TcpServer(int port, int backLog, InetAddress address) throws IOException {
+    public TcpServer(int port, int backLog, InetAddress address, String separator) throws IOException {
         setPort(port);
         setBackLog(backLog);
         this.address = address;
 
         this.serverSocket = new ServerSocket(port, backLog, address);
+
+        //Validate separator
+        this.separator = setSeparator(separator);
     }
 
     /**
