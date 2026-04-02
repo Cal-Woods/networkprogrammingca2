@@ -1,5 +1,6 @@
 package services;
 
+import exceptions.InvalidEmailFormatException;
 import interfaces.EmailManager;
 import interfaces.Server;
 import lombok.NonNull;
@@ -90,6 +91,23 @@ public class TcpServer implements Server {
             System.err.println("Could not close server!" + e.toString());
         }
     }
+    /**
+     * Sends an email by storing it as an email object in-memory.
+     * @param email Given {@link Email} to send
+     * @return True if email sent successfully, else false
+     */
+    @Override
+    public boolean saveEmail(Email email) {
+        if(email == null) {
+            throw new IllegalArgumentException("Given Email object was null!");
+        }
+
+        //Store email
+        emails.storeEmail(email);
+
+        return true;
+    }
+
     private void setPort(int port) {
         if (port < 0 || port > 65535) {
             log.error("Could not set port as given port was out of range! {}", port);
