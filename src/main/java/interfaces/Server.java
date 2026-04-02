@@ -2,8 +2,6 @@ package interfaces;
 
 import model.Email;
 
-import java.time.LocalDateTime;
-
 public interface Server {
     /**
      * Starts server on configured port.
@@ -17,12 +15,14 @@ public interface Server {
 
     /**
      * Sends an email over network connection.
+     * @param email {@link Email} to send
      * @return True if email sent
      */
-    boolean sendEmail(String recipient, String subject, String body, LocalDateTime timestamp);
+    boolean sendEmail(Email email);
 
     /**
      * Receives email from client.
+     * @return {@link Email} object with obtained data from network
      */
     Email receiveEmail();
 }
