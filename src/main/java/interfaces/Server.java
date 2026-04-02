@@ -20,7 +20,7 @@ public interface Server {
      * @param email {@link Email} to send
      * @return True if email sent
      */
-    boolean sendEmail(Email email);
+    boolean saveEmail(Email email);
 
     /**
      * Receives email from client.
