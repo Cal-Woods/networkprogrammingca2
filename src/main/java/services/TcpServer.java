@@ -6,6 +6,7 @@ import interfaces.Server;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import model.Email;
+import utils.Validators;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -106,6 +107,55 @@ public class TcpServer implements Server {
         emails.storeEmail(email);
 
         return true;
+    }
+
+    /**
+     * Parses incoming email from connected client.
+     * @return Parsed email as {@link Email} object.
+     * @throws InvalidEmailFormatException From private String method
+     * validateEmailData(String inputData).
+     */
+    @Override
+    public Email receiveEmail() throws InvalidEmailFormatException {
+        Email email = null;
+
+        try {
+            Scanner inputScanner = new Scanner(this.clientSocket.getInputStream());
+            String inputData = inputScanner.nextLine();
+
+            String safeData = null;
+
+            try {
+                safeData = Validators.validateStringData(inputData);
+            }
+            catch(IllegalArgumentException e) {
+                log.error("Could not perform receive email operation as given inputData was null or blank! {}", e.toString());
+                throw new IllegalArgumentException("Could not perform receive email operation as received data was not valid!");
+            }
+
+            //Split safeData
+            String[] splitData = safeData.split(this.separator);
+
+            Validators.validateEmail(splitData[0]);
+            Validators.validateEmail(splitData[1]);
+
+            int id = idGenerator++;
+            //Build Email
+            email = new Email(id, splitData[0], splitData[1], splitData[2], splitData[3]);
+
+
+        }
+        catch (IOException e) {
+            log.error("Could not receive email due to IOException! {}", e.toString());
+            return null;
+        }
+
+        return email;
+    }
+
+    @Override
+    public void sendEmailsForRecipient(String recipient) {
+
     }
 
     private void setPort(int port) {
