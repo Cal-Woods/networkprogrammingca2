@@ -175,4 +175,15 @@ public class TcpServer implements Server {
 
         this.backLog = backLog;
     }
+
+    private String setSeparator(String separator) {
+        try {
+            Validators.validateStringData(separator);
+            return separator;
+        }
+        catch (IllegalArgumentException e) {
+            log.error("Could not set separator! {}", separator);
+            throw new IllegalArgumentException("Given separator was null or blank!");
+        }
+    }
 }
