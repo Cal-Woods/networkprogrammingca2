@@ -2,8 +2,6 @@ package interfaces;
 
 import model.Email;
 
-import java.util.List;
-
 public interface Server {
     /**
      * Starts server on configured port.
@@ -29,5 +27,5 @@ public interface Server {
     Email receiveEmail();
 
 
-    List<Email> sendEmailsForRecipient(String recipient);
+    void sendEmailsForRecipient(String recipient);
 }
