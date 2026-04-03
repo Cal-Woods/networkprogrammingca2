@@ -1,4 +1,5 @@
 import concurrency.ServerThread;
+import interfaces.EmailManager;
 import interfaces.Server;
 import lombok.extern.slf4j.Slf4j;
 import services.TcpServer;
@@ -12,14 +13,16 @@ public class TcpMultiThreadServer {
     //Setup
     static int SERVER_PORT = 5555;
     static InetAddress SERVER_ADDRESS;
+    static EmailManager emailManager;
+
     //Set max number of connections
     static int BACK_LOG = 5;
+    static String separator = "##";
     static Runnable serverThread;
-    static TcpServer tcpServer;
 
     public static void main(String[] args) throws IOException, InterruptedException {
-        Server tcpServer = new TcpServer(SERVER_PORT);
-        serverThread = new ServerThread(tcpServer);
+        Server tcpServer = new TcpServer(SERVER_PORT, BACK_LOG, SERVER_ADDRESS, separator, emailManager);
+        serverThread = new ServerThread();
         Thread[] threads = new Thread[BACK_LOG];
         //Setup threads Thread array
         for (int i = 0; i < BACK_LOG; i++) {
