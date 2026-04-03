@@ -2,6 +2,7 @@ package model;
 
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
+import utils.Validators;
 
 /**
  * Structure for holding Email data.
@@ -16,6 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 @Setter
 public class Email implements Comparable<Email> {
     @EqualsAndHashCode.Include @Setter(AccessLevel.NONE) private int emailId;
+    @NonNull private String sender;
     @NonNull private String recipient;
     @NonNull private String subject;
     @NonNull private String body;
@@ -27,32 +29,21 @@ public class Email implements Comparable<Email> {
      * @param subject Given email subject
      * @param body Given email body
      */
-    public Email(int emailId, String recipient, String subject, String body) {
+    public Email(int emailId, String sender, String recipient, String subject, String body) {
         if (emailId < 1) {
-            log.error("Could not create new Email object as given email id was < 0!");
+            log.error("Could not create new Email object as given email id was < 1!");
             throw new IllegalArgumentException("Email was < 1, must be > 0!");
         }
         this.emailId = emailId;
 
-        validateStringData(recipient);
-        this.recipient = recipient;
+        this.sender = Validators.validateStringData(sender);
+        Validators.validateEmail(this.sender);
 
-        validateStringData(subject);
-        this.subject = subject;
+        this.recipient = Validators.validateStringData(recipient);
 
-        validateStringData(body);
-        this.body = body;
-    }
+        this.subject = Validators.validateStringData(subject);
 
-    private static void validateStringData(String data) {
-        if (data == null) {
-            log.error("Could not create new Email object as given email data was null!");
-            throw new IllegalArgumentException("Email data was null!");
-        }
-        else if (data.isBlank()) {
-            log.error("Could not create new Email object as given String data was blank!");
-            throw new IllegalArgumentException("Given String data was blank, check all String data!" + data.toString());
-        }
+        this.body = Validators.validateStringData(body);
     }
 
     @Override
