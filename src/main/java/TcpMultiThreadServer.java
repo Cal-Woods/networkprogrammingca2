@@ -1,45 +1,32 @@
 import concurrency.ServerThread;
 import interfaces.EmailManager;
-import interfaces.Server;
+import services.InMemoryEmailManager; // You need this concrete class
 import lombok.extern.slf4j.Slf4j;
-import services.TcpServer;
-
 import java.io.IOException;
-import java.net.InetAddress;
-import java.util.Scanner;
+import java.net.ServerSocket;
+import java.net.Socket;
 
 @Slf4j
 public class TcpMultiThreadServer {
-    //Setup
     static int SERVER_PORT = 5555;
-    static InetAddress SERVER_ADDRESS;
-    static EmailManager emailManager;
-
-    //Set max number of connections
-    static int BACK_LOG = 5;
     static String separator = "##";
-    static Runnable serverThread;
+    // Initialize your storage (Step 1 implementation)
+    static EmailManager emailManager = new InMemoryEmailManager();
 
-    public static void main(String[] args) throws IOException, InterruptedException {
-        Server tcpServer = new TcpServer(SERVER_PORT, BACK_LOG, SERVER_ADDRESS, separator, emailManager);
-        serverThread = new ServerThread();
-        Thread[] threads = new Thread[BACK_LOG];
-        //Setup threads Thread array
-        for (int i = 0; i < BACK_LOG; i++) {
-            threads[i] = new Thread(serverThread);
-            //Start threads[i]
-            threads[i].start();
+    public static void main(String[] args) {
+        try (java.net.ServerSocket serverSocket = new java.net.ServerSocket(SERVER_PORT)) {
+            log.info("Server is listening on port " + SERVER_PORT);
+
+            while (true) {
+                java.net.Socket clientSocket = serverSocket.accept();
+                log.info("New client connected!");
+
+                ServerThread worker = new ServerThread(clientSocket, emailManager, separator);
+
+                new Thread(worker).start();
+            }
+        } catch (java.io.IOException e) {
+            log.error("Server error: " + e.getMessage());
         }
-    }
-
-    /**
-     * Gets user input via a local {@link Scanner} object sc.
-     * @param prompt Given prfompt to display
-     * @return Obtained {@link String} from {@link Scanner}
-     */
-    private static String getInput(String prompt) {
-        Scanner sc = new Scanner(System.in);
-        System.out.print(prompt);
-        return sc.nextLine();
     }
 }
