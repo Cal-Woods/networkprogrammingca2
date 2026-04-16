@@ -5,11 +5,14 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.LinkedList;
 
 @Slf4j
 public class TcpMultiThreadServer {
     static int SERVER_PORT = 5555;
     static String separator = "##";
+    static LinkedList<Thread> threads = new LinkedList();
+    static int currentRunningThreads = 0;
     // Initialize your storage (Step 1 implementation)
     static EmailManager emailManager = new InMemoryEmailManager();
 
@@ -19,11 +22,11 @@ public class TcpMultiThreadServer {
 
             while (true) {
                 java.net.Socket clientSocket = serverSocket.accept();
-                log.info("New client connected!");
+                log.info("New client connected at {}:{}!",  clientSocket.getInetAddress().getHostAddress(), clientSocket.getPort());
 
                 ServerThread worker = new ServerThread(clientSocket, emailManager, separator);
-
-                new Thread(worker).start();
+                threads.add(new Thread(worker));
+                threads.get(currentRunningThreads++).start();
             }
         } catch (java.io.IOException e) {
             log.error("Server error: " + e.getMessage());
