@@ -15,7 +15,7 @@ public class Validators {
         String input = validateStringData(email);
 
         if(!input.matches("^.+@.+[.][a-zA-Z]{2,}")) {
-            throw new InvalidEmailFormatException("Given email data is an invalid address!");
+            throw new InvalidEmailFormatException("Given email data is an invalid address, check sender and recipient!");
         }
     }
 
