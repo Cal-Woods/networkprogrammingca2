@@ -40,6 +40,7 @@ public class Email implements Comparable<Email> {
         Validators.validateEmail(this.sender);
 
         this.recipient = Validators.validateStringData(recipient);
+        Validators.validateEmail(this.recipient);
 
         this.subject = Validators.validateStringData(subject);
 
