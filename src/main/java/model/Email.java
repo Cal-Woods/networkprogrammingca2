@@ -1,5 +1,6 @@
 package model;
 
+import exceptions.InvalidEmailFormatException;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import utils.Validators;
@@ -37,10 +38,22 @@ public class Email implements Comparable<Email> {
         this.emailId = emailId;
 
         this.sender = Validators.validateStringData(sender);
-        Validators.validateEmail(this.sender);
+        try {
+            Validators.validateEmail(this.sender);
+        }
+        catch (InvalidEmailFormatException e) {
+            log.error("Could not create new Email object as given email address of sender was invalid! {}", sender);
+            throw new InvalidEmailFormatException("Given email address of sender was not a valid email address!");
+        }
 
         this.recipient = Validators.validateStringData(recipient);
-        Validators.validateEmail(this.recipient);
+        try {
+            Validators.validateEmail(this.recipient);
+        }
+        catch (InvalidEmailFormatException e) {
+            log.error("Could not create new Email object as given email address of recipient was invalid! {}", sender);
+            throw new InvalidEmailFormatException("Given email address of recipient was not a valid email address!");
+        }
 
         this.subject = Validators.validateStringData(subject);
 
