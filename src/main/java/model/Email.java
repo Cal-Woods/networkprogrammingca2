@@ -77,4 +77,8 @@ public class Email implements Comparable<Email> {
             return 0;
         }
     }
+
+    public String format() {
+        return "Sender: " + this.sender + "\nRecipient: " + this.recipient + "\nSubject: " + this.subject;
+    }
 }
