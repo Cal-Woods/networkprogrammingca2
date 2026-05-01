@@ -39,13 +39,17 @@ public class ServerThread implements Runnable {
             while (in.hasNextLine()) {
                 String line = in.nextLine().trim();
                 if (line.isEmpty()) continue;
-
+                if(!line.contains(separator)) {
+                    log.error("Invalid command received from client!##" + line);
+                    out.println("Invalid command!");
+                    continue;
+                }
                 String[] tokens = line.split(separator);
                 String command = tokens[0].toUpperCase().trim();
 
                 switch (command) {
                     case "LOGIN":
-                        if (tokens.length < 3) {
+                        if (tokens.length != 3) {
                             out.println("400 ERROR##Usage: LOGIN##username##password");
                         }
 
