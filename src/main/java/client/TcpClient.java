@@ -2,6 +2,7 @@ package client;
 
 import exceptions.InvalidEmailFormatException;
 import lombok.extern.slf4j.Slf4j;
+import model.RegisterModel;
 import utils.Validators;
 
 import java.io.*;
@@ -104,6 +105,36 @@ public class TcpClient {
                             continue;
                         }
                         break;
+                    case "REGISTER":
+                        if(inputTokens.length != 6 && inputTokens.length != 7) {
+                            log.error("Invalid REGISTER command was entered into input! {}", inputTokens.length);
+                            System.out.println("Invalid REGISTER command, not enough arguments!");
+                            continue;
+                        }
+
+                        RegisterModel registerModel = new RegisterModel();
+
+                        try {
+                            registerModel.validateFirstLastName(inputTokens[1],  inputTokens[2]);
+                            registerModel.validateEmail(inputTokens[3]);
+                            registerModel.validatePasswords(inputTokens[4], inputTokens[5]);
+                            if(inputTokens.length == 7) {
+                                registerModel.validatePhoneNumber(inputTokens[6]);
+                            }
+
+                            out.println(input);
+                        }
+                        catch(IllegalArgumentException e) {
+                            log.error("Invalid register data was given by user! {}",  e.getMessage());
+                            System.out.println("Invalid register data, " + e.getMessage());
+                            continue;
+                        }
+                        catch(InvalidEmailFormatException e) {
+                            log.error("Invalid email format! {}",  e.getMessage());
+                            System.out.println("Invalid email format, " + e.getMessage());
+                            continue;
+                        }
+                        break;
                         //TODO: Finish validating command structure
 //                    case "":
 //
@@ -112,8 +143,9 @@ public class TcpClient {
 
                 String response = in.readLine();
 
-                if(response.matches("^TOKEN##[a-zA-Z0-9-]+$")) {
-                    loginToken = response;
+                if(response.matches("^TOKEN##[a-zA-Z0-9-]{36}$")) {
+                    loginToken = response.substring(6);
+                    System.out.println("Login Token: " + loginToken);
                     loginClaim = inputTokens[1];
                     continue;
                 }
