@@ -71,7 +71,42 @@ public class ServerThread implements Runnable {
                         out.println("221 Goodbye");
                         socket.close();
                         return; // Exit the thread
+                    case "REGISTER":
+                        if(tokens.length != 6 && tokens.length != 7) {
+                            out.println("400 ERROR##INVALID COMMAND!##Usage: REGISTER##firstName##lastName##email##password##confirmPassword##(optional)phoneNumber");
+                            continue;
+                        }
 
+                        RegisterModel registerModel = new RegisterModel();
+
+                        //Validate and set registerModel current data
+                        try {
+                            registerModel.validateFirstLastName(registerModel.getFirstName(), registerModel.getLastName());
+                            registerModel.validateEmail(registerModel.getEmail());
+                            registerModel.validatePasswords(registerModel.getPassword(), registerModel.getConfirmPassword());
+
+                            //Check if phone number was given
+                            if(tokens.length == 7) {
+                                registerModel.validatePhoneNumber(tokens[6]);
+                            }
+
+                            if(!authService.register(registerModel)) {
+                                log.info("Register new email failed!");
+                                out.println("Failed to register new email: email already exists!");
+                            }
+
+                            continue;
+                        }
+                        catch(IllegalArgumentException e) {
+                            log.error("Invalid command received from client! {}", e.toString()  );
+                            out.println("Given data was invalid, check all data! " + e.getMessage());
+                        }
+                        catch(InvalidEmailFormatException e) {
+                            log.error("Invalid email format! {}", e.toString());
+                            out.println("Given email format was invalid! E.g. something@domain.something. " + e.getMessage());
+                        }
+
+                        break;
                     default:
                         out.println("500 ERROR##Unknown Command");
                         break;
