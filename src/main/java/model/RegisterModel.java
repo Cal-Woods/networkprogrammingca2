@@ -129,6 +129,7 @@ public class RegisterModel {
         }
         if (number.length() < 12) {
             log.error("Invalid phone number in RegisterModel, was less than 12 digit!");
+            throw new IllegalArgumentException("Invalid phone number was less than 12 digits, must be at least 12!, " + number);
         }
         if(!number.matches("^\\d+$")) {
             log.error("Invalid phone number was not all numerical digits, " + number);
