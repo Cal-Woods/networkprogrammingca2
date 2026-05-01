@@ -32,11 +32,11 @@ public class RegisterModel {
      * @param firstName Given first name
      * @param lastName Given last name
      */
-    public RegisterModel(String password, String confirmPassword, String email, String phoneNumber, String firstName, String lastName) {
+    public RegisterModel(String firstName, String lastName, String password, String confirmPassword, String email, String phoneNumber) {
+        validateFirstLastName(firstName, lastName);
         validatePasswords(password, confirmPassword);
         validateEmail(email);
         validatePhoneNumber(phoneNumber);
-        validateFirstLastName(firstName, lastName);
     }
 
     /**
