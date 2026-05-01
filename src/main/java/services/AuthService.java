@@ -71,6 +71,8 @@ public class AuthService {
      * @return True if registration successful
      * @throws IllegalArgumentException If given data was invalid
      * @throws InvalidEmailFormatException If given email was invalid
+     *
+     * @author Cal Woods
      */
     public boolean register(RegisterModel registerModel) throws IllegalArgumentException, InvalidEmailFormatException {
         //Call registerModel instance validation methods
