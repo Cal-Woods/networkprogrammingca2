@@ -3,8 +3,12 @@ package concurrency;
 import interfaces.EmailManager;
 import lombok.extern.slf4j.Slf4j;
 import model.Email;
+import model.RegisterModel;
+import services.AuthService;
 import utils.Validators; // Connects your Validators
 import exceptions.InvalidEmailFormatException; // Connects your Custom Exception
+
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.Scanner;
@@ -15,11 +19,13 @@ public class ServerThread implements Runnable {
     private final EmailManager emailManager;
     private final String separator;
     private String currentUser = null;
+    private final AuthService authService;
 
-    public ServerThread(Socket socket, EmailManager manager, String separator) {
+    public ServerThread(Socket socket, EmailManager manager, String separator, AuthService authService) {
         this.socket = socket;
         this.emailManager = manager;
         this.separator = separator;
+        this.authService = authService;
     }
 
     @Override
@@ -39,12 +45,18 @@ public class ServerThread implements Runnable {
 
                 switch (command) {
                     case "LOGIN":
-                        if (tokens.length < 2) {
-                            out.println("400 ERROR##Usage: LOGIN##username");
-                        } else {
-                            this.currentUser = tokens[1];
-                            out.println("200 OK##Welcome " + currentUser);
+                        if (tokens.length < 3) {
+                            out.println("400 ERROR##Usage: LOGIN##username##password");
                         }
+
+                        String loginToken = authService.authenticate(tokens[1], tokens[2], socket.getInetAddress().getHostAddress());
+
+                        if (loginToken == null) {
+                            out.println("400 ERROR##Incorrect username or password!");
+                            break;
+                        }
+
+                        out.println("TOKEN##" + loginToken);
                         break;
 
                     case "SEND":
@@ -53,6 +65,7 @@ public class ServerThread implements Runnable {
 
                     case "QUIT":
                         out.println("221 Goodbye");
+                        socket.close();
                         return; // Exit the thread
 
                     default:
@@ -60,10 +73,14 @@ public class ServerThread implements Runnable {
                         break;
                 }
             }
-        } catch (Exception e) {
+        }
+        catch (IOException e) {
+            log.error("Server error, cannot start: " + e.getMessage());
+            return;
+        }
+        catch (Exception e) {
             log.error("Client error: {}", e.getMessage());
-        } finally {
-            try { socket.close(); } catch (Exception ignored) {}
+            return;
         }
     }
 
