@@ -81,9 +81,9 @@ public class ServerThread implements Runnable {
 
                         //Validate and set registerModel current data
                         try {
-                            registerModel.validateFirstLastName(registerModel.getFirstName(), registerModel.getLastName());
-                            registerModel.validateEmail(registerModel.getEmail());
-                            registerModel.validatePasswords(registerModel.getPassword(), registerModel.getConfirmPassword());
+                            registerModel.validateFirstLastName(tokens[1], tokens[2]);
+                            registerModel.validateEmail(tokens[3]);
+                            registerModel.validatePasswords(tokens[4], tokens[5]);
 
                             //Check if phone number was given
                             if(tokens.length == 7) {
@@ -95,6 +95,7 @@ public class ServerThread implements Runnable {
                                 out.println("Failed to register new email: email already exists!");
                             }
 
+                            out.println("Registered successfully!");
                             continue;
                         }
                         catch(IllegalArgumentException e) {
@@ -105,7 +106,6 @@ public class ServerThread implements Runnable {
                             log.error("Invalid email format! {}", e.toString());
                             out.println("Given email format was invalid! E.g. something@domain.something. " + e.getMessage());
                         }
-
                         break;
                     default:
                         out.println("500 ERROR##Unknown Command");
