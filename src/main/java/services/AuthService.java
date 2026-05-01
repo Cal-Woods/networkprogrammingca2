@@ -79,7 +79,9 @@ public class AuthService {
         try {
             registerModel.validateEmail(registerModel.getEmail());
             registerModel.validatePasswords(registerModel.getPassword(), registerModel.getConfirmPassword());
-            registerModel.validatePhoneNumber(String.valueOf(registerModel.getPhoneNumber()));
+            if(registerModel.getPhoneNumber() != null) {
+                registerModel.validatePhoneNumber(String.valueOf(registerModel.getPhoneNumber()));
+            }
             registerModel.validateFirstLastName(registerModel.getFirstName(), registerModel.getLastName());
 
             //Check user does not already exist
