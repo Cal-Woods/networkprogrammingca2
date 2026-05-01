@@ -15,7 +15,6 @@ import utils.Validators;
 @Slf4j
 @Getter
 @Setter
-@Builder
 public class RegisterModel {
     private String email;
     private String password;
@@ -117,26 +116,26 @@ public class RegisterModel {
     /**
      * Validates phone number is all digits and sets instance phone number to null
      * if given phone number is null.
-     * @param phoneNumber Given phone number
+     * @param number Given phone number
      */
-    public void validatePhoneNumber(String phoneNumber) {
-        if (phoneNumber == null) {
+    public void validatePhoneNumber(String number) {
+        if (number == null) {
             this.phoneNumber = null;
             return;
         }
-        if(phoneNumber.isBlank()) {
+        if(number.isBlank()) {
             log.error("Invalid phone number in RegisterModel was empty or contained only whitespace!");
             throw new IllegalArgumentException("Invalid phone number was empty or contained only whitespace!");
         }
-        if (phoneNumber.length() < 12) {
+        if (number.length() < 12) {
             log.error("Invalid phone number in RegisterModel, was less than 12 digit!");
         }
-        if(!phoneNumber.matches("^\\d+$")) {
-            log.error("Invalid phone number was not all numerical digits, " + phoneNumber);
-            throw new IllegalArgumentException("Invalid phone number was not all numerical digits, " + phoneNumber);
+        if(!number.matches("^\\d+$")) {
+            log.error("Invalid phone number was not all numerical digits, " + number);
+            throw new IllegalArgumentException("Invalid phone number was not all numerical digits, " + number);
         }
 
-        this.phoneNumber = Long.parseLong(phoneNumber);
+        this.phoneNumber = Long.parseLong(number);
     }
 
     /**
