@@ -9,7 +9,7 @@ import java.util.LinkedList;
 
 @Slf4j
 public class TcpMultiThreadServer {
-    static int SERVER_PORT = 5555;
+    static int SERVER_PORT = 50000;
     static String separator = "##";
     static LinkedList<Thread> threads = new LinkedList();
     static int currentRunningThreads = 0;
