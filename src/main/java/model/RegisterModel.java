@@ -42,7 +42,14 @@ public class RegisterModel {
     /**
      * No arguments constructor for setting values post-registration using setters.
      */
-    public RegisterModel() {}
+    public RegisterModel() {
+        this.firstName = null;
+        this.lastName = null;
+        this.password = null;
+        this.confirmPassword = null;
+        this.email = null;
+        this.phoneNumber = null;
+    }
 
     /**
      * Validate and sets incoming email.
