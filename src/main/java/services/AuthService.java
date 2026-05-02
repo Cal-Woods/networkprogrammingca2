@@ -55,11 +55,11 @@ public class AuthService {
             return null;
         }
 
-        if (!hasher.check(validatedPassword, credentials.get(validatedUsername))) {
+        if (!Password.check(validatedPassword, credentials.get(validatedUsername)).addPepper(pepper).with(hasher)) {
             return null;
         }
 
-        String token = UUID.fromString(validatedIp).toString();
+        String token = UUID.randomUUID().toString();
         tokens.put(token, validatedUsername);
 
         return token;
