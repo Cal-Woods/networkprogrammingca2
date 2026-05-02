@@ -40,7 +40,7 @@ public class ServerThread implements Runnable {
                 String line = in.nextLine().trim();
                 if (line.isEmpty()) continue;
                 if(!line.contains(separator)) {
-                    log.error("Invalid command received from client!##" + line);
+                    log.error("Invalid command received from client!##{}", line);
                     out.println("Invalid command!");
                     continue;
                 }
@@ -53,7 +53,7 @@ public class ServerThread implements Runnable {
                             out.println("400 ERROR##Usage: LOGIN##username##password");
                         }
 
-                        String loginToken = authService.authenticate(tokens[1], tokens[2], socket.getInetAddress().getHostAddress());
+                        String loginToken = authService.authenticate(tokens[1], tokens[2]);
 
                         if (loginToken == null) {
                             out.println("400 ERROR##Incorrect username or password!");
@@ -61,6 +61,7 @@ public class ServerThread implements Runnable {
                         }
 
                         out.println("TOKEN##" + loginToken);
+                        currentUser = tokens[1];
                         break;
 
                     case "SEND":
@@ -115,7 +116,7 @@ public class ServerThread implements Runnable {
             }
         }
         catch (IOException e) {
-            log.error("Server error, cannot start: " + e.getMessage());
+            log.error("Server error, cannot start: {}", e.getMessage());
             return;
         }
         catch (Exception e) {

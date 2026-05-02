@@ -41,8 +41,7 @@ public class AuthService {
      * @throws InvalidEmailFormatException If given username is not a valid email address
      * @return A {@link String} token representing login session
      */
-    public String authenticate(String username, String password, String ipAddress) throws InvalidEmailFormatException {
-        String validatedIp = Validators.validateStringData(ipAddress);
+    public String authenticate(String username, String password) throws InvalidEmailFormatException {
         String validatedUsername = Validators.validateStringData(username);
         Validators.validateEmail(validatedUsername);
 
