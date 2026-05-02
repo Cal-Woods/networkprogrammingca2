@@ -57,7 +57,7 @@ public class ServerThread implements Runnable {
 
                         if (loginToken == null) {
                             out.println("400 ERROR##Incorrect username or password!");
-                            break;
+                            continue;
                         }
 
                         out.println("TOKEN##" + loginToken);
@@ -70,7 +70,8 @@ public class ServerThread implements Runnable {
                     case "QUIT":
                         out.println("221 Goodbye");
                         socket.close();
-                        return; // Exit the thread
+                        break; // Exit the thread
+
                     case "REGISTER":
                         if(tokens.length != 6 && tokens.length != 7) {
                             out.println("400 ERROR##INVALID COMMAND!##Usage: REGISTER##firstName##lastName##email##password##confirmPassword##(optional)phoneNumber");
