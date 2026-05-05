@@ -104,4 +104,27 @@ public class AuthService {
             throw new IllegalArgumentException("Invalid email received from RegisterModel!");
         }
     }
+
+    public boolean logout(String loginToken) {
+        if(loginToken == null) {
+            log.error("Cannot perform logout action as invalid login token parameter was null!");
+            throw new IllegalArgumentException("Invalid login token parameter was null!");
+        }
+        if(loginToken.isEmpty()) {
+            log.error("Cannot perform logout action as invalid login token parameter was empty!");
+            throw new IllegalArgumentException("Invalid login token parameter was empty!");
+        }
+        if(!loginToken.matches("[a-zA-Z0-9-]{36}")) {
+            log.error("Cannot perform logout action as invalid login token length {}!", loginToken.length());
+            throw new IllegalArgumentException("Invalid login token length!");
+        }
+
+        if(!tokens.containsKey(loginToken)) {
+            log.error("Cannot perform logout action as invalid login token!");
+            return false;
+        }
+        tokens.remove(loginToken);
+        log.info("User logged out successfully!");
+        return true;
+    }
 }
