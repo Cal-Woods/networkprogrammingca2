@@ -12,7 +12,7 @@ import java.util.Scanner;
 @Slf4j
 public class TcpClient {
     private static String loginToken = "";
-    private static String loginClaim;
+    private static String loginClaim = null;
 
     public static void main(String[] args) {
         try (Socket socket = new Socket("localhost", 50000);
@@ -25,9 +25,8 @@ public class TcpClient {
             String input = "";
 
             while (true) {
-                if(!loginToken.isBlank()) {
-                    System.out.println("You are logged in as " + loginClaim != null ? loginClaim +"!" : "Not logged in!");
-                }
+                System.out.println("\nYou are " + (loginClaim != null && !loginClaim.isBlank() ? "logged in as" + loginClaim + "!" : "not logged in!"));
+
                 System.out.println("\nCommands:\n  LOGIN##username##password\n  SEND##to##sub##body(Must be logged in)\n  VIEW-EMAILS(Must be logged in)\n  LOGOUT\n  QUIT");
                 System.out.print("> ");
 
@@ -44,8 +43,9 @@ public class TcpClient {
                         loginClaim = "";
                         continue;
                     }
+                    String logoutToken = input + "##" + loginToken;
 
-                    out.println(input);
+                    out.println(logoutToken);
 
                     loginToken = "";
                     loginClaim = "";
@@ -141,11 +141,11 @@ public class TcpClient {
 //                        break;
                 }
 
+                input = null;
                 String response = in.readLine();
 
                 if(response.matches("^TOKEN##[a-zA-Z0-9-]{36}$")) {
-                    loginToken = response.substring(6);
-                    System.out.println("Login Token: " + loginToken);
+                    loginToken = response.substring(7);
                     loginClaim = inputTokens[1];
                     continue;
                 }

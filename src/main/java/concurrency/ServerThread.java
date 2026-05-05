@@ -36,13 +36,38 @@ public class ServerThread implements Runnable {
             // Handshake greeting
             out.println("220 Welcome to the Email Server");
 
+            String line = null;
+
             while (in.hasNextLine()) {
-                String line = in.nextLine().trim();
-                if (line.isEmpty()) continue;
-                if(!line.contains(separator)) {
-                    log.error("Invalid command received from client!##{}", line);
-                    out.println("Invalid command!");
-                    continue;
+                line = in.nextLine().trim();
+                if (line.isEmpty()) {
+                    break;
+                }
+                if(line.matches("^[lL][oO][gG][oO][uU][tT]##[a-zA-Z0-9-]{36}$")) {
+                    log.info("Received logout request from client: {}:{}", socket.getInetAddress().getHostName(), socket.getPort());
+
+                    try {
+                        if (currentUser != null) {
+                            if (!authService.logout(line.substring(8))) {
+                                out.println("You are not logged in!");
+                            }
+                            else {
+                                out.println("You have been successfully logged out!");
+                                log.info("User {} logged out successfully!", currentUser);
+                            }
+
+                            currentUser = null;
+                        }
+                        else {
+                            log.error("Cannot execute logout action as currentUser is not set!");
+                        }
+
+                        continue;
+                    }
+                    catch (IllegalArgumentException e) {
+                        log.error("Error occurred while trying to logout user {}!",  currentUser);
+                    }
+
                 }
                 String[] tokens = line.split(separator);
                 String command = tokens[0].toUpperCase().trim();
@@ -51,13 +76,14 @@ public class ServerThread implements Runnable {
                     case "LOGIN":
                         if (tokens.length != 3) {
                             out.println("400 ERROR##Usage: LOGIN##username##password");
+                            break;
                         }
 
                         String loginToken = authService.authenticate(tokens[1], tokens[2]);
 
                         if (loginToken == null) {
                             out.println("400 ERROR##Incorrect username or password!");
-                            continue;
+                            break;
                         }
 
                         out.println("TOKEN##" + loginToken);
@@ -76,7 +102,7 @@ public class ServerThread implements Runnable {
                     case "REGISTER":
                         if(tokens.length != 6 && tokens.length != 7) {
                             out.println("400 ERROR##INVALID COMMAND!##Usage: REGISTER##firstName##lastName##email##password##confirmPassword##(optional)phoneNumber");
-                            continue;
+                            break;
                         }
 
                         RegisterModel registerModel = new RegisterModel();
@@ -95,10 +121,10 @@ public class ServerThread implements Runnable {
                             if(!authService.register(registerModel)) {
                                 log.info("Register new email failed!");
                                 out.println("Failed to register new email: email already exists!");
+                                break;
                             }
 
                             out.println("Registered successfully!");
-                            continue;
                         }
                         catch(IllegalArgumentException e) {
                             log.error("Invalid command received from client! {}", e.toString()  );
@@ -123,6 +149,15 @@ public class ServerThread implements Runnable {
             log.error("Client error: {}", e.getMessage());
             return;
         }
+        finally {
+            try {
+                socket.close();
+            } catch (IOException e) {
+                log.error("Error closing socket: {}", e.getMessage());
+            }
+        }
+
+        return;
     }
 
     private void handleSend(String[] tokens, PrintWriter out) {
