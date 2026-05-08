@@ -64,6 +64,30 @@ public class AuthService {
         return token;
     }
 
+    public boolean isRegistered(String username) {
+        if (username == null) {
+            return false;
+        }
+        return credentials.containsKey(username.trim());
+    }
+
+    public boolean hasToken(String token) {
+        return token != null && tokens.containsKey(token);
+    }
+
+    public String getUsernameForToken(String token) {
+        if (token == null) {
+            return null;
+        }
+        return tokens.get(token);
+    }
+
+    public void logout(String token) {
+        if (token != null) {
+            tokens.remove(token);
+        }
+    }
+
     /**
      * Validates register data as a {@link RegisterModel} object.
      * @param registerModel Given {@link RegisterModel} object
@@ -101,7 +125,7 @@ public class AuthService {
         }
         catch(InvalidEmailFormatException e) {
             log.error("Cannot perform register action as invalid email received from RegisterModel!");
-            throw new IllegalArgumentException("Invalid email received from RegisterModel!");
+            throw new InvalidEmailFormatException("Invalid email received from RegisterModel!");
         }
     }
 }

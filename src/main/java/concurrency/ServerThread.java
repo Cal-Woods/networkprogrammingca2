@@ -1,31 +1,36 @@
 package concurrency;
 
+import exceptions.InvalidEmailFormatException;
 import interfaces.EmailManager;
 import lombok.extern.slf4j.Slf4j;
 import model.Email;
 import model.RegisterModel;
 import services.AuthService;
-import utils.Validators; // Connects your Validators
-import exceptions.InvalidEmailFormatException; // Connects your Custom Exception
+import utils.Validators;
 
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.List;
+import java.util.Optional;
 import java.util.Scanner;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
 public class ServerThread implements Runnable {
     private final Socket socket;
     private final EmailManager emailManager;
-    private final String separator;
-    private String currentUser = null;
     private final AuthService authService;
+    private final AtomicInteger emailIdSequence;
+    private final String separator;
+    private String currentUser;
+    private String currentToken;
 
-    public ServerThread(Socket socket, EmailManager manager, String separator, AuthService authService) {
+    public ServerThread(Socket socket, EmailManager manager, String separator, AuthService authService, AtomicInteger emailIdSequence) {
         this.socket = socket;
         this.emailManager = manager;
-        this.separator = separator;
         this.authService = authService;
+        this.emailIdSequence = emailIdSequence;
+        this.separator = separator;
     }
 
     @Override
@@ -33,118 +38,119 @@ public class ServerThread implements Runnable {
         try (Scanner in = new Scanner(socket.getInputStream());
              PrintWriter out = new PrintWriter(socket.getOutputStream(), true)) {
 
-            // Handshake greeting
-            out.println("220 Welcome to the Email Server");
+            out.println("220##WELCOME##Email Server ready");
 
             while (in.hasNextLine()) {
                 String line = in.nextLine().trim();
-                if (line.isEmpty()) continue;
-                if(!line.contains(separator)) {
-                    log.error("Invalid command received from client!##{}", line);
-                    out.println("Invalid command!");
+                if (line.isEmpty()) {
                     continue;
                 }
-                String[] tokens = line.split(separator);
-                String command = tokens[0].toUpperCase().trim();
+
+                String command = extractCommand(line);
 
                 switch (command) {
-                    case "LOGIN":
-                        if (tokens.length != 3) {
-                            out.println("400 ERROR##Usage: LOGIN##username##password");
-                        }
-
-                        String loginToken = authService.authenticate(tokens[1], tokens[2]);
-
-                        if (loginToken == null) {
-                            out.println("400 ERROR##Incorrect username or password!");
-                            continue;
-                        }
-
-                        out.println("TOKEN##" + loginToken);
-                        currentUser = tokens[1];
-                        break;
-
-                    case "SEND":
-                        handleSend(tokens, out);
-                        break;
-
-                    case "QUIT":
-                        out.println("221 Goodbye");
-                        socket.close();
-                        break; // Exit the thread
-
-                    case "REGISTER":
-                        if(tokens.length != 6 && tokens.length != 7) {
-                            out.println("400 ERROR##INVALID COMMAND!##Usage: REGISTER##firstName##lastName##email##password##confirmPassword##(optional)phoneNumber");
-                            continue;
-                        }
-
-                        RegisterModel registerModel = new RegisterModel();
-
-                        //Validate and set registerModel current data
-                        try {
-                            registerModel.validateFirstLastName(tokens[1], tokens[2]);
-                            registerModel.validateEmail(tokens[3]);
-                            registerModel.validatePasswords(tokens[4], tokens[5]);
-
-                            //Check if phone number was given
-                            if(tokens.length == 7) {
-                                registerModel.validatePhoneNumber(tokens[6]);
-                            }
-
-                            if(!authService.register(registerModel)) {
-                                log.info("Register new email failed!");
-                                out.println("Failed to register new email: email already exists!");
-                            }
-
-                            out.println("Registered successfully!");
-                            continue;
-                        }
-                        catch(IllegalArgumentException e) {
-                            log.error("Invalid command received from client! {}", e.toString()  );
-                            out.println("Given data was invalid, check all data! " + e.getMessage());
-                        }
-                        catch(InvalidEmailFormatException e) {
-                            log.error("Invalid email format! {}", e.toString());
-                            out.println("Given email format was invalid! E.g. something@domain.something. " + e.getMessage());
-                        }
-                        break;
-                    default:
-                        out.println("500 ERROR##Unknown Command");
-                        break;
+                    case "REGISTER" -> handleRegister(line, out);
+                    case "LOGIN" -> handleLogin(line, out);
+                    case "SEND" -> handleSend(line, out);
+                    case "LIST-INBOX", "INBOX" -> handleListInbox(out);
+                    case "SEARCH-INBOX" -> handleSearchInbox(line, out);
+                    case "LIST-SENT", "SENT" -> handleListSent(out);
+                    case "SEARCH-SENT" -> handleSearchSent(line, out);
+                    case "READ" -> handleRead(line, out);
+                    case "LOGOUT" -> handleLogout(out);
+                    case "QUIT" -> {
+                        handleLogout(out);
+                        out.println("221##BYE");
+                        return;
+                    }
+                    default -> out.println("400##ERROR##UNKNOWN_COMMAND");
                 }
             }
-        }
-        catch (IOException e) {
-            log.error("Server error, cannot start: {}", e.getMessage());
-            return;
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             log.error("Client error: {}", e.getMessage());
-            return;
+        } finally {
+            handleDisconnect();
         }
     }
 
-    private void handleSend(String[] tokens, PrintWriter out) {
+    private void handleRegister(String line, PrintWriter out) {
+        String[] tokens = line.split(separator, 7);
+        if (tokens.length < 6 || tokens.length > 7) {
+            out.println("400##REGISTER##USAGE##REGISTER##first##last##email##password##confirm##phone?");
+            return;
+        }
+
+        RegisterModel registerModel = new RegisterModel();
+
         try {
-            // 1. Check if logged in
-            if (currentUser == null) {
-                out.println("401 ERROR##Please LOGIN first");
+            registerModel.validateFirstLastName(tokens[1], tokens[2]);
+            registerModel.validateEmail(tokens[3]);
+            registerModel.validatePasswords(tokens[4], tokens[5]);
+            if (tokens.length == 7) {
+                registerModel.validatePhoneNumber(tokens[6]);
+            }
+
+            boolean registered = authService.register(registerModel);
+            if (registered) {
+                out.println("201##REGISTER##OK##" + registerModel.getEmail());
+            } else {
+                out.println("409##REGISTER##EXISTS");
+            }
+        } catch (InvalidEmailFormatException e) {
+            out.println("400##REGISTER##INVALID_EMAIL##" + e.getMessage());
+        } catch (IllegalArgumentException e) {
+            out.println("400##REGISTER##INVALID_DATA##" + e.getMessage());
+        }
+    }
+
+    private void handleLogin(String line, PrintWriter out) {
+        if (isAuthenticated()) {
+            out.println("409##LOGIN##ALREADY_AUTHENTICATED");
+            return;
+        }
+
+        String[] tokens = line.split(separator, 3);
+        if (tokens.length != 3) {
+            out.println("400##LOGIN##USAGE##LOGIN##email##password");
+            return;
+        }
+
+        try {
+            String token = authService.authenticate(tokens[1], tokens[2]);
+            if (token == null) {
+                out.println("401##LOGIN##FAILED");
                 return;
             }
 
-            // 2. Check if we have all parts (SEND##to##subject##body)
-            if (tokens.length < 4) {
-                out.println("400 ERROR##Missing data. Use SEND##to##sub##body");
-                return;
-            }
+            this.currentUser = tokens[1];
+            this.currentToken = token;
+            out.println("200##LOGIN##OK##" + currentUser);
+        } catch (InvalidEmailFormatException e) {
+            out.println("400##LOGIN##INVALID_EMAIL##" + e.getMessage());
+        }
+    }
 
-            // 3. VALIDATION: This triggers  Validators.java code!
+    private void handleSend(String line, PrintWriter out) {
+        if (!isAuthenticated()) {
+            out.println("401##AUTH_REQUIRED");
+            return;
+        }
+
+        String[] tokens = line.split(separator, 4);
+        if (tokens.length != 4) {
+            out.println("400##SEND##USAGE##SEND##recipient##subject##body");
+            return;
+        }
+
+        try {
             Validators.validateEmail(tokens[1]);
+            if (!authService.isRegistered(tokens[1])) {
+                out.println("404##SEND##RECIPIENT_NOT_REGISTERED");
+                return;
+            }
 
-            // 4. LOGIC: Create and save the email
             Email email = new Email(
-                    (int)(Math.random() * 1000),
+                    emailIdSequence.getAndIncrement(),
                     currentUser,
                     tokens[1],
                     tokens[2],
@@ -152,13 +158,135 @@ public class ServerThread implements Runnable {
             );
 
             emailManager.storeEmail(email);
-            out.println("200 OK##Email sent successfully to " + tokens[1]);
-
+            out.println("201##SEND##OK##" + email.getEmailId());
         } catch (InvalidEmailFormatException e) {
-            // Catches the specific error from your Validator
-            out.println("400 ERROR##" + e.getMessage());
-        } catch (Exception e) {
-            out.println("500 ERROR##Server processing error");
+            out.println("400##SEND##INVALID_RECIPIENT##" + e.getMessage());
+        } catch (IllegalArgumentException e) {
+            out.println("400##SEND##INVALID_DATA##" + e.getMessage());
         }
+    }
+
+    private void handleListInbox(PrintWriter out) {
+        if (!isAuthenticated()) {
+            out.println("401##AUTH_REQUIRED");
+            return;
+        }
+
+        List<Email> emails = emailManager.getReceivedEmails(currentUser);
+        writeEmailList(out, "INBOX", emails, true);
+    }
+
+    private void handleSearchInbox(String line, PrintWriter out) {
+        if (!isAuthenticated()) {
+            out.println("401##AUTH_REQUIRED");
+            return;
+        }
+
+        String[] tokens = line.split(separator, 2);
+        if (tokens.length != 2) {
+            out.println("400##SEARCH-INBOX##USAGE##SEARCH-INBOX##query");
+            return;
+        }
+
+        List<Email> emails = emailManager.searchReceivedEmails(currentUser, tokens[1]);
+        writeEmailList(out, "SEARCH-INBOX", emails, true);
+    }
+
+    private void handleListSent(PrintWriter out) {
+        if (!isAuthenticated()) {
+            out.println("401##AUTH_REQUIRED");
+            return;
+        }
+
+        List<Email> emails = emailManager.getSentEmails(currentUser);
+        writeEmailList(out, "SENT", emails, false);
+    }
+
+    private void handleSearchSent(String line, PrintWriter out) {
+        if (!isAuthenticated()) {
+            out.println("401##AUTH_REQUIRED");
+            return;
+        }
+
+        String[] tokens = line.split(separator, 2);
+        if (tokens.length != 2) {
+            out.println("400##SEARCH-SENT##USAGE##SEARCH-SENT##query");
+            return;
+        }
+
+        List<Email> emails = emailManager.searchSentEmails(currentUser, tokens[1]);
+        writeEmailList(out, "SEARCH-SENT", emails, false);
+    }
+
+    private void handleRead(String line, PrintWriter out) {
+        if (!isAuthenticated()) {
+            out.println("401##AUTH_REQUIRED");
+            return;
+        }
+
+        String[] tokens = line.split(separator, 2);
+        if (tokens.length != 2) {
+            out.println("400##READ##USAGE##READ##emailId");
+            return;
+        }
+
+        try {
+            int emailId = Integer.parseInt(tokens[1].trim());
+            Optional<Email> email = emailManager.getEmailById(currentUser, emailId);
+            if (email.isPresent()) {
+                out.println(email.get().toReadResponseLine());
+            } else {
+                out.println("404##READ##NOT_FOUND##" + emailId);
+            }
+        } catch (NumberFormatException e) {
+            out.println("400##READ##INVALID_ID");
+        }
+    }
+
+    private void handleLogout(PrintWriter out) {
+        if (currentToken != null) {
+            authService.logout(currentToken);
+        }
+
+        currentUser = null;
+        currentToken = null;
+        out.println("200##LOGOUT##OK");
+    }
+
+    private void handleDisconnect() {
+        if (currentToken != null) {
+            authService.logout(currentToken);
+        }
+
+        try {
+            socket.close();
+        } catch (Exception ignored) {
+        }
+    }
+
+    private boolean isAuthenticated() {
+        return currentUser != null && !currentUser.isBlank();
+    }
+
+    private String extractCommand(String line) {
+        int separatorIndex = line.indexOf(separator);
+        if (separatorIndex < 0) {
+            return line.toUpperCase();
+        }
+        return line.substring(0, separatorIndex).trim().toUpperCase();
+    }
+
+    private void writeEmailList(PrintWriter out, String label, List<Email> emails, boolean inbox) {
+        if (emails == null || emails.isEmpty()) {
+            out.println("204##" + label + "##EMPTY");
+            out.println("END");
+            return;
+        }
+
+        out.println("200##" + label + "##" + emails.size());
+        for (Email email : emails) {
+            out.println(inbox ? email.toInboxMetadataLine() : email.toSentMetadataLine());
+        }
+        out.println("END");
     }
 }

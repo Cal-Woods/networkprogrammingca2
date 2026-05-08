@@ -5,6 +5,9 @@ import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import utils.Validators;
 
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
+
 /**
  * Structure for holding Email data.
  *
@@ -15,13 +18,13 @@ import utils.Validators;
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @ToString
 @Getter
-@Setter
 public class Email implements Comparable<Email> {
     @EqualsAndHashCode.Include @Setter(AccessLevel.NONE) private int emailId;
     @NonNull private String sender;
     @NonNull private String recipient;
     @NonNull private String subject;
     @NonNull private String body;
+    @NonNull private Instant timestamp;
 
     /**
      * Constructor for creating new {@link Email} object with all parameters.
@@ -31,6 +34,10 @@ public class Email implements Comparable<Email> {
      * @param body Given email body
      */
     public Email(int emailId, String sender, String recipient, String subject, String body) {
+        this(emailId, sender, recipient, subject, body, Instant.now());
+    }
+
+    public Email(int emailId, String sender, String recipient, String subject, String body, Instant timestamp) {
         if (emailId < 1) {
             log.error("Could not create new Email object as given email id was < 1!");
             throw new IllegalArgumentException("Email was < 1, must be > 0!");
@@ -58,6 +65,7 @@ public class Email implements Comparable<Email> {
         this.subject = Validators.validateStringData(subject);
 
         this.body = Validators.validateStringData(body);
+        this.timestamp = timestamp == null ? Instant.now() : timestamp;
     }
 
     @Override
@@ -79,6 +87,51 @@ public class Email implements Comparable<Email> {
     }
 
     public String format() {
-        return "Sender: " + this.sender + "\nRecipient: " + this.recipient + "\nSubject: " + this.subject;
+        return "ID: " + this.emailId
+                + "\nSender: " + this.sender
+                + "\nRecipient: " + this.recipient
+                + "\nSubject: " + this.subject
+                + "\nTimestamp: " + DateTimeFormatter.ISO_INSTANT.format(this.timestamp)
+                + "\nBody: " + this.body;
+    }
+
+    public String toMetadataLine() {
+        return "EMAIL##" + emailId
+                + "##" + sender
+                + "##" + recipient
+                + "##" + subject
+                + "##" + DateTimeFormatter.ISO_INSTANT.format(timestamp);
+    }
+
+    public String toInboxMetadataLine() {
+        return "EMAIL##" + emailId
+                + "##" + sender
+                + "##" + subject
+                + "##" + DateTimeFormatter.ISO_INSTANT.format(timestamp);
+    }
+
+    public String toSentMetadataLine() {
+        return "EMAIL##" + emailId
+                + "##" + recipient
+                + "##" + subject
+                + "##" + DateTimeFormatter.ISO_INSTANT.format(timestamp);
+    }
+
+    public String toReadLine() {
+        return "READ##" + emailId
+                + "##" + sender
+                + "##" + recipient
+                + "##" + subject
+                + "##" + DateTimeFormatter.ISO_INSTANT.format(timestamp)
+                + "##" + body;
+    }
+
+    public String toReadResponseLine() {
+        return "200##READ##OK##" + emailId
+                + "##" + sender
+                + "##" + recipient
+                + "##" + subject
+                + "##" + DateTimeFormatter.ISO_INSTANT.format(timestamp)
+                + "##" + body;
     }
 }
