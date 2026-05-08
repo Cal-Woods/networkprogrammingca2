@@ -91,6 +91,12 @@ public class ServerThread implements Runnable {
                         break;
 
                     case "SEND":
+                        if(tokens.length != 4) {
+                            log.error("could not perform send operation as received data was not in correct format!");
+                            out.println("400 ERROR##Command was not in correct format " + line + ", Syntax is: SEND##user@provider.domain##subject##body");
+                            continue;
+                        }
+
                         handleSend(tokens, out);
                         break;
 
@@ -161,6 +167,15 @@ public class ServerThread implements Runnable {
     }
 
     private void handleSend(String[] tokens, PrintWriter out) {
+        if (tokens == null) {
+            log.error("Could not complete handleSend() operation due to null tokens parameter!");
+            return;
+        }
+        if(out == null) {
+            log.error("Could not complete handleSend() operation due to null PrintWriter!");
+            return;
+        }
+
         try {
             // 1. Check if logged in
             if (currentUser == null) {
@@ -188,6 +203,7 @@ public class ServerThread implements Runnable {
 
             emailManager.storeEmail(email);
             out.println("200 OK##Email sent successfully to " + tokens[1]);
+            return;
 
         } catch (InvalidEmailFormatException e) {
             // Catches the specific error from your Validator

@@ -25,7 +25,7 @@ public class TcpClient {
             String input = "";
 
             while (true) {
-                System.out.println("\nYou are " + (loginClaim != null && !loginClaim.isBlank() ? "logged in as" + loginClaim + "!" : "not logged in!"));
+                System.out.println("\nYou are " + (loginClaim != null && !loginClaim.isBlank() ? "logged in as " + loginClaim + "!" : "not logged in!"));
 
                 System.out.println("\nCommands:\n  LOGIN##username##password\n  SEND##to##sub##body(Must be logged in)\n  VIEW-EMAILS(Must be logged in)\n  LOGOUT\n  QUIT");
                 System.out.print("> ");
@@ -43,6 +43,7 @@ public class TcpClient {
                         loginClaim = "";
                         continue;
                     }
+
                     String logoutToken = input + "##" + loginToken;
 
                     out.println(logoutToken);
@@ -101,9 +102,19 @@ public class TcpClient {
                         break;
                     case "SEND":
                         if(inputTokens.length != 4) {
-                            System.out.println("Invalid command!");
+                            log.error("Invalid command {}!", input);
+                            System.out.println("Invalid command " + input + "!");
                             continue;
                         }
+                        try {
+                            Validators.validateEmail(inputTokens[1]);
+                        }
+                        catch(InvalidEmailFormatException e) {
+                            log.error("Could not complete send operation as given {to} recipient is not a valid email address!");
+                            System.out.println("Could not complete send operation as invalid recipient email address, must be a valid email address, " + inputTokens[1] + "!");
+                            continue;
+                        }
+                        out.println(input);
                         break;
                     case "REGISTER":
                         if(inputTokens.length != 6 && inputTokens.length != 7) {
