@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.Scanner;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
 public class ServerThread implements Runnable {
@@ -20,12 +21,14 @@ public class ServerThread implements Runnable {
     private final String separator;
     private String currentUser = null;
     private final AuthService authService;
+    private AtomicInteger emailIdSequence;
 
-    public ServerThread(Socket socket, EmailManager manager, String separator, AuthService authService) {
+    public ServerThread(Socket socket, EmailManager manager, String separator, AuthService authService, AtomicInteger emailIdSequence) {
         this.socket = socket;
         this.emailManager = manager;
         this.separator = separator;
         this.authService = authService;
+        this.emailIdSequence = emailIdSequence;
     }
 
     @Override
