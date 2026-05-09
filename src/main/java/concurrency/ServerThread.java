@@ -42,11 +42,18 @@ public class ServerThread implements Runnable {
             while (in.hasNextLine()) {
                 String line = in.nextLine().trim();
                 if (line.isEmpty()) continue;
+
+                if(line.equalsIgnoreCase("QUIT")) {
+                    log.info("QUIT command received on a Thread, closing thread!");
+                    return;
+                }
+
                 if(!line.contains(separator)) {
                     log.error("Invalid command received from client!##{}", line);
                     out.println("Invalid command!");
                     continue;
                 }
+
                 String[] tokens = line.split(separator);
                 String command = tokens[0].toUpperCase().trim();
 
@@ -70,12 +77,6 @@ public class ServerThread implements Runnable {
                     case "SEND":
                         handleSend(tokens, out);
                         break;
-
-                    case "QUIT":
-                        out.println("221 Goodbye");
-                        socket.close();
-                        break; // Exit the thread
-
                     case "REGISTER":
                         if(tokens.length != 6 && tokens.length != 7) {
                             out.println("400 ERROR##INVALID COMMAND!##Usage: REGISTER##firstName##lastName##email##password##confirmPassword##(optional)phoneNumber");
@@ -101,7 +102,6 @@ public class ServerThread implements Runnable {
                             }
 
                             out.println("Registered successfully!");
-                            continue;
                         }
                         catch(IllegalArgumentException e) {
                             log.error("Invalid command received from client! {}", e.toString()  );
@@ -111,6 +111,30 @@ public class ServerThread implements Runnable {
                             log.error("Invalid email format! {}", e.toString());
                             out.println("Given email format was invalid! E.g. something@domain.something. " + e.getMessage());
                         }
+                        break;
+                    case "LOGOUT":
+                        if(tokens.length != 2) {
+                            log.error("Invalid logout command received from client!##{}", line);
+                            out.println("400 ERROR##Usage: LOGOUT##TOKEN");
+                            continue;
+                        }
+                        if(!tokens[1].matches("[a-zA-Z0-9-]{36}")) {
+                            log.error("Cannot perform logout operation as invalid token received from client!");
+                            out.println("Could not logout as token was invalid!");
+                            continue;
+                        }
+
+                        if(!authService.logout(tokens[1])) {
+                            log.error("Logout failed as invalid token!");
+                            out.println("Failed to logout as token was invalid!");
+                            continue;
+                        }
+
+                        String loggedOutUser = currentUser;
+                        currentUser = null;
+
+                        log.info("User {} successfully logged out!", loggedOutUser);
+                        out.println("Logged out successfully!");
                         break;
                     default:
                         out.println("500 ERROR##Unknown Command");

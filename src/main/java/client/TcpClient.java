@@ -25,9 +25,8 @@ public class TcpClient {
             String input = "";
 
             while (true) {
-                if(!loginToken.isBlank()) {
-                    System.out.println("You are logged in as " + loginClaim != null ? loginClaim +"!" : "Not logged in!");
-                }
+                System.out.println("You are " + (loginClaim != null ? "logged in as: " + loginClaim + "!" : "not logged in!"));
+
                 System.out.println("\nCommands:\n  LOGIN##username##password\n  SEND##to##sub##body(Must be logged in)\n  VIEW-EMAILS(Must be logged in)\n  LOGOUT\n  QUIT");
                 System.out.print("> ");
 
@@ -35,20 +34,23 @@ public class TcpClient {
 
                 //Validate single-part commands
                 if(input.equalsIgnoreCase("QUIT")) {
+                    out.println(input);
+                    out.close();
+                    in.close();
                     socket.close();
-                    break;
+                    System.out.println("Goodbye!");
+                    return;
                 }
                 if(input.equalsIgnoreCase("LOGOUT")) {
-                    if(loginToken.equals("")) {
+                    if(loginToken.isBlank()) {
                         System.out.println("You are not logged in so you do not need to logout!");
-                        loginClaim = "";
                         continue;
                     }
 
-                    out.println(input);
+                    out.println(input + "##" + loginToken);
 
                     loginToken = "";
-                    loginClaim = "";
+                    loginClaim = null;
                     System.out.println("Logged out successfully!");
                     continue;
                 }
@@ -104,6 +106,8 @@ public class TcpClient {
                             System.out.println("Invalid command!");
                             continue;
                         }
+
+                        out.println(input);
                         break;
                     case "REGISTER":
                         if(inputTokens.length != 6 && inputTokens.length != 7) {
@@ -127,25 +131,18 @@ public class TcpClient {
                         catch(IllegalArgumentException e) {
                             log.error("Invalid register data was given by user! {}",  e.getMessage());
                             System.out.println("Invalid register data, " + e.getMessage());
-                            continue;
                         }
                         catch(InvalidEmailFormatException e) {
                             log.error("Invalid email format! {}",  e.getMessage());
                             System.out.println("Invalid email format, " + e.getMessage());
-                            continue;
                         }
                         break;
-                        //TODO: Finish validating command structure
-//                    case "":
-//
-//                        break;
                 }
 
                 String response = in.readLine();
 
                 if(response.matches("^TOKEN##[a-zA-Z0-9-]{36}$")) {
-                    loginToken = response.substring(6);
-                    System.out.println("Login Token: " + loginToken);
+                    loginToken = response.substring(7);
                     loginClaim = inputTokens[1];
                     continue;
                 }

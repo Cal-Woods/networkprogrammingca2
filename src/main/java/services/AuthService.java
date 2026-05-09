@@ -104,4 +104,13 @@ public class AuthService {
             throw new IllegalArgumentException("Invalid email received from RegisterModel!");
         }
     }
+
+    public boolean logout(String token) {
+        if(!tokens.containsKey(token)) {
+            return false;
+        }
+
+        tokens.remove(token);
+        return true;
+    }
 }
